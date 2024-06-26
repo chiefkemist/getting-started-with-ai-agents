@@ -1,0 +1,10 @@
+#+title: Getting Started With Ai Agents
+#+author: ChiefKemist
+#+date: <2024-06-26 Wed>
+
+
+
+* Information Retrieval vs Data Generation vs Function Calling with the Python Instructor library
+
+So far, we have been using Instructor for both Information Retrieval and Data Generation as Structured Data.
+We will now dig deeper into the more advanced Function Calling Capabilities of the Python Instructor library.
