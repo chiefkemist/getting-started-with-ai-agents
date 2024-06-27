@@ -432,6 +432,7 @@ pydantic==2.7.4
     # via langchain-core
     # via langsmith
     # via openai
+    # via sqlmodel
 pydantic-core==2.18.4
     # via instructor
     # via pydantic
@@ -523,6 +524,7 @@ rich==13.7.1
     # via typer
 rsa==4.9
     # via google-auth
+ruff==0.5.0
 s3transfer==0.10.2
     # via boto3
 schema==0.7.7
@@ -557,6 +559,9 @@ sqlalchemy==2.0.31
     # via embedchain
     # via langchain
     # via langchain-community
+    # via sqlmodel
+sqlmodel==0.0.19
+    # via getting-started-with-ai-agents
 starlette==0.37.2
     # via fastapi
     # via marimo

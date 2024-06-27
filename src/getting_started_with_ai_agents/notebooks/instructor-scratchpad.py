@@ -7,7 +7,8 @@ app = marimo.App(width="medium", app_title="Instructor Scratch Pad")
 @app.cell
 def __():
     import marimo as mo
-    return mo,
+
+    return (mo,)
 
 
 @app.cell
@@ -22,11 +23,16 @@ def __():
 
     from instructor import Instructor, AsyncInstructor
     from instructor import OpenAISchema, llm_validator
+
     # from anthropic import Anthropic, AsyncAnthropic
     # from groq import Groq, AsyncGroq
     from openai import OpenAI, AsyncOpenAI
+    from openai.types.chat.chat_completion_message_tool_call import (
+        ChatCompletionMessageToolCall,
+    )
     from pydantic import BaseModel, Field
     from pydantic import BeforeValidator, AfterValidator
+    from pydantic_core import from_json
 
     from rich.console import Console
 
@@ -37,6 +43,7 @@ def __():
         AsyncOpenAI,
         BaseModel,
         BeforeValidator,
+        ChatCompletionMessageToolCall,
         Console,
         Field,
         Instructor,
@@ -44,6 +51,7 @@ def __():
         OpenAISchema,
         Optional,
         console,
+        from_json,
         instructor,
         json,
         llm_validator,
@@ -56,20 +64,20 @@ def __():
 def __(os):
     # from getpass import getpass
     # OPENAI_API_KEY = getpass('Paste your OpenAI API Key: ')
-    OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
-    return OPENAI_API_KEY,
+    OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+    return (OPENAI_API_KEY,)
 
 
 @app.cell
 def __():
     from enum import Enum, auto
 
-
     class LLMModel(str, Enum):
         Claude3 = "claude-3-opus-20240229"
         GPT4_Omni = "gpt-4o"
         GPT35_Turbo = "gpt-3.5-turbo"
         LLAMA3 = "llama3-70b-8192"
+
     return Enum, LLMModel, auto
 
 
@@ -104,7 +112,6 @@ def __(
             #     client = instructor.patch(Groq())
         return client
 
-
     def gen_async_client(model=LLMModel.GPT4_Omni) -> AsyncInstructor:
         match model:
             # case LLMModel.Claude3:
@@ -114,6 +121,7 @@ def __(
             # case LLMModel.LLAMA3:
             #     client = instructor.patch(AsyncGroq())
         return client
+
     return gen_async_client, gen_client
 
 
@@ -151,9 +159,11 @@ def __(BaseModel):
         """
         Extract User Data
         """
+
         name: str
         age: int
-    return UserDetail,
+
+    return (UserDetail,)
 
 
 @app.cell
@@ -164,11 +174,11 @@ def __(LLMModel, UserDetail, client_gpt35turbo):
         messages=[
             {
                 "role": "user",
-                "content": "Hi, my name is Lambert, and I am 24 years old."
+                "content": "Hi, my name is Lambert, and I am 24 years old.",
             }
-        ]
+        ],
     )
-    return user,
+    return (user,)
 
 
 @app.cell
@@ -200,7 +210,8 @@ def __(BaseModel, Field, Optional, uuid4):
     class User(BaseModel):
         id: str = Field(default_factory=lambda: str(uuid4().hex))
         id2: Optional[str]
-    return User,
+
+    return (User,)
 
 
 @app.cell
@@ -222,10 +233,10 @@ def __(OpenAISchema):
         age: int
 
         def run(self):
-            msg = f"User's name is {self.name} and age is {self.age}"
+            msg = f"UserFunc->run: User's name is {self.name} and age is {self.age}"
             return msg
 
-    return UserFunc,
+    return (UserFunc,)
 
 
 @app.cell
@@ -247,23 +258,23 @@ def __(LLMModel, UserFunc, client_gpt35turbo):
         messages=[
             {
                 "role": "user",
-                "content": "Hi, my name is Lambert, and I am 24 years old."
+                "content": "Hi, my name is Lambert, and I am 24 years old.",
             }
         ],
         tools=[
             {
                 "type": "function",
-                "function": UserFunc.openai_schema, #add your function
+                "function": UserFunc.openai_schema,  # add your function
             }
         ],
         tool_choice={
             "type": "function",
             "function": {
                 "name": UserFunc.openai_schema["name"],
-            }
-        }
+            },
+        },
     )
-    return user_completion,
+    return (user_completion,)
 
 
 @app.cell
@@ -291,36 +302,54 @@ def __(mo):
 
 
 @app.cell
-def __(console, json):
-    def execute_tool(tool_call, funcs):
-        Func = next(iter([func for func in funcs if func.__name__ == tool_call.function.name]))
+def __(
+    ChatCompletionMessageToolCall,
+    List,
+    OpenAISchema,
+    console,
+    from_json,
+):
+    def execute_tool(
+        tool_call: ChatCompletionMessageToolCall, funcs: List[OpenAISchema]
+    ):
+        Func = next(
+            iter([func for func in funcs if func.__name__ == tool_call.function.name])
+        )
 
         if not Func:
             available_function_names = [func.__name__ for func in funcs]
             return f"Error: Function {tool_call.function.name} not found. Available functions: {available_function_names}"
 
         try:
-            console.log(f"Tool Call -> {tool_call.function.name} ->with {tool_call.function.arguments} of type {type(tool_call.function.arguments)}", style="bold blue")
-            #func = Func(**eval(tool_call.function.arguments))
-            args = json.loads(tool_call.function.arguments)
-            func = Func(**args)
+            console.log(
+                f"Tool Call -> {tool_call.function.name} ->with {tool_call.function.arguments} of type {type(tool_call.function.arguments)}",
+                style="bold blue",
+            )
+            # func = Func(**eval(tool_call.function.arguments))
+            # args = json.loads(tool_call.function.arguments)
+            # func = Func(**args)
+            args = from_json(tool_call.function.arguments)
+            console.log(f"Args -> {args} of type {type(args)}", style="bold blue")
+            func = Func.model_validate(args)
+            console.log(f"Func -> {repr(func)}", style="bold blue")
             output = func.run()
             return output
         except Exception as e:
             return f"Error: {e}"
-    return execute_tool,
+
+    return (execute_tool,)
 
 
 @app.cell
 def __(UserFunc):
-    FUNCS=[UserFunc] # Available Functions
-    return FUNCS,
+    FUNCS = [UserFunc]  # Available Functions
+    return (FUNCS,)
 
 
 @app.cell
 def __(user_completion):
     first_user_completion_tool_choice = user_completion.choices[0]
-    return first_user_completion_tool_choice,
+    return (first_user_completion_tool_choice,)
 
 
 @app.cell

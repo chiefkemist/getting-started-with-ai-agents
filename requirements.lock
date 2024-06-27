@@ -432,6 +432,7 @@ pydantic==2.7.4
     # via langchain-core
     # via langsmith
     # via openai
+    # via sqlmodel
 pydantic-core==2.18.4
     # via instructor
     # via pydantic
@@ -557,6 +558,9 @@ sqlalchemy==2.0.31
     # via embedchain
     # via langchain
     # via langchain-community
+    # via sqlmodel
+sqlmodel==0.0.19
+    # via getting-started-with-ai-agents
 starlette==0.37.2
     # via fastapi
     # via marimo

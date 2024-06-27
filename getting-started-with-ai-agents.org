@@ -3,8 +3,222 @@
 #+date: <2024-06-26 Wed>
 
 
+* Introduction
 
-* Information Retrieval vs Data Generation vs Function Calling with the Python Instructor library
+What the heck is an Agent?
+
+* Concepts related to Agents and LLMs
+
+** ReAct (Reason + Act): [[https://arxiv.org/pdf/2210.03629][Synergizing Reasoning and Acting in Language Models]] ([[https://github.com/ysymyth/ReAct][Github]])
+
+Think about the Prompt and Do something about it (or not?).
+
+** Self-Refine: [[https://arxiv.org/pdf/2303.17651][Iterative Refinement with Self-Feedback]] ([[https://github.com/madaan/self-refine][Github]])
+
+Upon receiving a prompt, iteratively take an action, inspect its results and take further actions as needed to improve results until no further improvements is needed or some other constraint is met to force a stop, then return the final result.
+
+** Flow Engineering: [[https://arxiv.org/pdf/2401.08500][Code Generation with AlphaCodium: From Prompt Engineering to Flow Engineering]] ([[https://github.com/Codium-ai/AlphaCodium][Github]])
+
+A test-based, multi-stage, code-oriented iterative flow, that improves the performances of LLMs on code problems.
+
+* Agent Frameworks
+
+** CrewAI: [[https://www.crewai.com/][AI Agents for real use cases]]
+
+Most AI agent frameworks are hard to use. We provide power with simplicity. Automate your most important workflows quickly.
+
+** LangChain: [[https://www.langchain.com/agents][Agents]]
+
+Build the right cognitive architecture for your application. Identify and implement the best prompting strategies  and architectures so that your LLMs perform as intended.
+
+* Let's build an Agent
+
+** What's needed to build an LLM Powered Agent?
+
+- *Context*: Information for the Agent (Role, Goal, Initial Data etc)
+- *Prompt*: Message in Natural language to address the Agent (Text, Audio etc)
+- *Python*: Code the magic using [[https://python.useinstructor.com/][Instructor]]
+- *Read*: Do more reading to learn more about Agents and code away
+
+** Information Retrieval vs Data Generation vs Function Calling with the Python Instructor library
 
 So far, we have been using Instructor for both Information Retrieval and Data Generation as Structured Data.
 We will now dig deeper into the more advanced Function Calling Capabilities of the Python Instructor library.
+For scratpad, we'll use [[https://marimo.io/][Marimo Notebooks]].
+
+
+* So where's the A?
+
+#+begin_quote
+
+An agent is anything that can be viewed as perceiving its environment through sensors and Sensor acting upon that environment through actuators -- Stuart Russel and Peter Norvig.
+
+#+end_quote
+
+Borrowed from [[https://www.amazon.ca/Artificial-Intelligence-Modern-Approach-Global/dp/1292401133][Artificial Intelligence: A Modern Approach Fourth Edition]]
+
+** Percepts
+
+
+#+begin_src python
+
+class SystemMessage(BaseModel):
+    role: Literal["system"] = "system"
+    content: str
+
+class UserMessage(BaseModel):
+    role: Literal["user"] = "user"
+    content: str
+
+class AssistantMessage(BaseModel):
+    role: Literal["assistant"] = "assistant"
+    content: str
+
+
+percept_seq: List[Union[SystemMessage, UserMessage, AssistantMessage]] = []
+
+#+end_src
+
+
+** Table of actions
+
+
+#+begin_src python
+
+class DefaultFunc(OpenAISchema):
+    response: str
+    def run(self):
+        msg = f"DefaultFunc->run: {self.response}"
+        return msg
+
+class UserFunc(OpenAISchema):
+    name: str
+    age: int
+
+    def run(self):
+        msg = f"UserFunc->run: User's name is {self.name} and age is {self.age}"
+        return msg
+
+toolbox = [DefaultFunc, UserFunc]
+
+#+end_src
+
+** Actions and Actuator
+
+
+#+begin_src python
+
+def actuate(self, tool_call: ChatCompletionMessageToolCall):
+        Func = next(iter([func for func in toolbox if func.__name__ == tool_call.function.name]))
+
+        if not Func:
+            available_function_names = [func.__name__ for func in toolbox]
+            err_msg = f"Error: Function {tool_call.function.name} not found. Available functions: {available_function_names}"
+            console.error(err_msg)
+            return err_msg
+
+        try:
+            console.log(f"Tool Call -> {tool_call.function.name} ->with {tool_call.function.arguments} of type {type(tool_call.function.arguments)}", style="bold blue")
+            args = from_json(tool_call.function.arguments)
+            console.log(f"Args -> {args} of type {type(args)}", style="bold blue")
+            func = Func.model_validate(args)
+            console.log(f"Func -> {repr(func)}", style="bold blue")
+            output = func.run()
+            return output
+        except Exception as e:
+            return f"Error: {e}"
+
+#+end_src
+
+
+* An attempt at Agent Design
+
+This diagram helps visualize the flow of actions and thoughts through the agents, ensuring a structured and iterative approach to reaching the final outcome.
+
+#+begin_src mermaid
+
+graph TD
+    A[Start: Think about the prompt] --> B[Derive inputs]
+    B --> T1{Toolbox}
+    T1 -->|Tool 1| T2[Think about results of Tool 1]
+    T1 -->|Tool 2| T3[Think about results of Tool 2]
+    T1 -->|Tool 3| T4[Think about results of Tool 3]
+    T1 -->|Tool 4| T5[Think about results of Tool 4]
+    T1 -->|Tool 5| T6[Think about results of Tool 5]
+
+    T2 --> T7{Toolbox}
+    T3 --> T7
+    T4 --> T7
+    T5 --> T7
+    T6 --> T7
+
+    T7 -->|Tool 1| T8[Think about results of Tool 1]
+    T7 -->|Tool 2| T9[Think about results of Tool 2]
+    T7 -->|Tool 3| T10[Think about results of Tool 3]
+    T7 -->|Tool 4| T11[Think about results of Tool 4]
+    T7 -->|Tool 5| T12[Think about results of Tool 5]
+
+    T8 --> T13{Toolbox}
+    T9 --> T13
+    T10 --> T13
+    T11 --> T13
+    T12 --> T13
+
+    T13 -->|Tool 1| T14[Final result from Tool 1]
+    T13 -->|Tool 2| T15[Final result from Tool 2]
+    T13 -->|Tool 3| T16[Final result from Tool 3]
+    T13 -->|Tool 4| T17[Final result from Tool 4]
+    T13 -->|Tool 5| T18[Final result from Tool 5]
+
+    T14 --> F[Final Result]
+    T15 --> F
+    T16 --> F
+    T17 --> F
+    T18 --> F
+
+    style A fill:#f9f,stroke:#333,stroke-width:2px;
+    style B fill:#bbf,stroke:#333,stroke-width:2px;
+    style T1 fill:#bfb,stroke:#333,stroke-width:2px;
+    style T2 fill:#ff9,stroke:#333,stroke-width:2px;
+    style T3 fill:#ff9,stroke:#333,stroke-width:2px;
+    style T4 fill:#ff9,stroke:#333,stroke-width:2px;
+    style T5 fill:#ff9,stroke:#333,stroke-width:2px;
+    style T6 fill:#ff9,stroke:#333,stroke-width:2px;
+    style T7 fill:#bfb,stroke:#333,stroke-width:2px;
+    style T8 fill:#ff9,stroke:#333,stroke-width:2px;
+    style T9 fill:#ff9,stroke:#333,stroke-width:2px;
+    style T10 fill:#ff9,stroke:#333,stroke-width:2px;
+    style T11 fill:#ff9,stroke:#333,stroke-width:2px;
+    style T12 fill:#ff9,stroke:#333,stroke-width:2px;
+    style T13 fill:#bfb,stroke:#333,stroke-width:2px;
+    style T14 fill:#f99,stroke:#333,stroke-width:2px;
+    style T15 fill:#f99,stroke:#333,stroke-width:2px;
+    style T16 fill:#f99,stroke:#333,stroke-width:2px;
+    style T17 fill:#f99,stroke:#333,stroke-width:2px;
+    style T18 fill:#f99,stroke:#333,stroke-width:2px;
+    style F fill:#9f9,stroke:#333,stroke-width:2px;
+#+end_src
+
+*Explanation*
+
+- *Start:* Think about the prompt: The process begins with the agent considering the given prompt.
+- *Derive inputs:* The agent derives the necessary inputs to decide which tool(s) to use from the toolbox.
+- *Toolbox:* The agent has access to a toolbox containing 5 different tools. Based on the derived inputs, the agent selects a tool.
+- *Think about results of Tool:* After using the first tool, the agent thinks about the results it obtained.
+- *Sequential tool invocation:* The agent may decide to invoke a second and even a third tool based on the intermediate results.
+- *Final result:* Eventually, the agent yields the final result after processing through the necessary tools and intermediate thinking steps.
+
+* Conclusion
+
+This field is moving fast and there are few experts. Don't be afraid to read and learn and code to gain understanding.
+Then decide for yourself wether to adopt a library that suits your needs or make up your own!
+
+* References
+
+- [[https://www.amazon.ca/Artificial-Intelligence-Modern-Approach-Global/dp/1292401133][Artificial Intelligence: A Modern Approach Fourth Edition]]
+
+- ReAct (Reason + Act): [[https://arxiv.org/pdf/2210.03629][Synergizing Reasoning and Acting in Language Models]] ([[https://github.com/ysymyth/ReAct][Github]])
+
+- Self-Refine: [[https://arxiv.org/pdf/2303.17651][Iterative Refinement with Self-Feedback]] ([[https://github.com/madaan/self-refine][Github]])
+
+- Flow Engineering: [[https://arxiv.org/pdf/2401.08500][Code Generation with AlphaCodium: From Prompt Engineering to Flow Engineering]] ([[https://github.com/Codium-ai/AlphaCodium][Github]])
