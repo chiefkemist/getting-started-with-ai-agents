@@ -7,8 +7,7 @@ app = marimo.App(width="medium", app_title="Agents Scratchpad")
 @app.cell
 def __():
     import marimo as mo
-
-    return (mo,)
+    return mo,
 
 
 @app.cell
@@ -80,7 +79,7 @@ def __(os):
     # from getpass import getpass
     # OPENAI_API_KEY = getpass('Paste your OpenAI API Key: ')
     OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-    return (OPENAI_API_KEY,)
+    return OPENAI_API_KEY,
 
 
 @app.cell
@@ -92,7 +91,6 @@ def __():
         GPT4_Omni = "gpt-4o"
         GPT35_Turbo = "gpt-3.5-turbo"
         LLAMA3 = "llama3-70b-8192"
-
     return Enum, LLMModel, auto
 
 
@@ -136,7 +134,6 @@ def __(
             # case LLMModel.LLAMA3:
             #     client = instructor.patch(AsyncGroq())
         return client
-
     return gen_async_client, gen_client
 
 
@@ -179,7 +176,6 @@ def __(Any, BaseModel, Dict, Literal):
     class FuncNameArgs(BaseModel):
         arguments: Dict[str, Any]
         name: str
-
     return AssistantMessage, FuncNameArgs, SystemMessage, UserMessage
 
 
@@ -187,14 +183,14 @@ def __(Any, BaseModel, Dict, Literal):
 def __(SystemMessage):
     sys_msg = SystemMessage(content="Greet")
     sys_msg
-    return (sys_msg,)
+    return sys_msg,
 
 
 @app.cell
 def __(UserMessage):
     user_msg = UserMessage(content="Hi")
     user_msg
-    return (user_msg,)
+    return user_msg,
 
 
 @app.cell
@@ -212,7 +208,7 @@ def __(
         user_msg,
     ]
     msg_lst
-    return (msg_lst,)
+    return msg_lst,
 
 
 @app.cell
@@ -225,21 +221,21 @@ def __(msg_lst):
 def __(AssistantMessage):
     assistant_msg = AssistantMessage(content="Hello")
     assistant_msg
-    return (assistant_msg,)
+    return assistant_msg,
 
 
 @app.cell
 def __(AssistantMessage, SystemMessage, TypeAdapter, Union, UserMessage):
     MsgLst = TypeAdapter(Union[SystemMessage, UserMessage, AssistantMessage])
     MsgLst
-    return (MsgLst,)
+    return MsgLst,
 
 
 @app.cell
 def __(MsgLst):
     lb = MsgLst.validate_python({"type": "user", "content": "d"})
     lb
-    return (lb,)
+    return lb,
 
 
 @app.cell
@@ -251,8 +247,7 @@ def __(OpenAISchema):
         def run(self):
             msg = f"UserFunc->run: User's name is {self.name} and age is {self.age}"
             return msg
-
-    return (UserFunc,)
+    return UserFunc,
 
 
 @app.cell
@@ -263,8 +258,7 @@ def __(OpenAISchema):
         def run(self):
             msg = f"DefaultFunc->run: {self.response}"
             return msg
-
-    return (DefaultFunc,)
+    return DefaultFunc,
 
 
 @app.cell
@@ -350,8 +344,7 @@ def __(
                 content = first_message.content.replace("\\", "")
                 console.log(content)
                 return content
-
-    return (Agent,)
+    return Agent,
 
 
 @app.cell
@@ -359,14 +352,13 @@ def __(Agent, DefaultFunc, SystemMessage, UserFunc, client):
     person_details_agent = Agent(
         context=[
             SystemMessage(
-                content="You will collect the personal details of any persion mentioned, otherwise just answer the question."
+                content="You will collect the personal details of any person mentioned, otherwise just answer the question."
             )
         ],
         client=client,
         toolbox=[DefaultFunc, UserFunc],
     )
-
-    return (person_details_agent,)
+    return person_details_agent,
 
 
 @app.cell
@@ -378,17 +370,16 @@ def __(UserMessage, person_details_agent):
     )
     # [Function.validate(response_msg).dict() for response_msg in responses_msg]
     responses_msg
-
-    return (responses_msg,)
+    return responses_msg,
 
 
 @app.cell
 def __(UserMessage, person_details_agent):
     weather_conversion_msg = person_details_agent.run(
-        UserMessage(content="How do we conver Fahrenheit to Celcius?")
+        UserMessage(content="How do we convert Fahrenheit to Celcius?")
     )
     weather_conversion_msg
-    return (weather_conversion_msg,)
+    return weather_conversion_msg,
 
 
 @app.cell

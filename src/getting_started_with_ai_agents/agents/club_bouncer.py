@@ -67,11 +67,12 @@ class ClubBouncer(Agent):
                 f"Welcome to the club {guest.name}! You are on the guest list and do not need a ticket. Please proceed."
             )
             self.capacity -= 1  # decrement the capacity
-            self.table_count -= 1  # decrement the table count
         elif guest.is_vip:
             console.log(
                 f"Welcome to the club {guest.name}! You are a VIP and do not need a ticket. Please proceed."
             )
+            self.capacity -= 1  # decrement the capacity
+            self.table_count -= 1  # decrement the table count
         else:
             console.log(f"Sorry {guest.name}, you can't enter the club.")
 
